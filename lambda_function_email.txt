@@ -1,0 +1,87 @@
+import boto3
+import os
+import logging
+import json
+from botocore.client import Config
+from urllib.parse import urlencode
+
+logger = logging.getLogger()
+logger.setLevel(logging.INFO)
+
+s3 = boto3.client(
+    's3',
+    region_name='us-east-2',
+    config=Config(signature_version='s3v4')
+)
+ses = boto3.client('ses', region_name='us-east-2')
+
+SOURCE_EMAIL = os.environ['Source_email']
+
+def lambda_handler(event, context):
+    bucket = event.get('bucket')
+    keys = event.get('keys', [])     
+    emails = event.get('emails', []) 
+    file_id = event.get('file_id')
+    base_url = event.get('base_url')  
+
+    if not bucket or not keys or not emails or not file_id or not base_url:
+        logger.error(f"Missing parameters: {json.dumps(event)}")
+        return {
+            'statusCode': 400,
+            'body': json.dumps({'error': 'Missing bucket, keys, emails, file_id, or base_url'})
+        }
+
+    subject = "Your Files are Ready to Download"
+
+    successful = []
+    failed = []
+
+    for email in emails:
+        params = urlencode({'file_id': file_id, 'email': email})
+        track_url = f"{base_url.rstrip('/')}/track?{params}"
+
+        html_body = f"""
+        <html>
+        <body>
+            <p>Hello,</p>
+            <p>You have been sent the following file(s):</p>
+            <ul>
+        """
+
+        for key in keys:
+            html_body += f"<li>{key}</li>"
+
+        html_body += f"""
+            </ul>
+            <p>Use the link below to download your file (valid for 24 hours):</p>
+            <p><a href="{track_url}">{track_url}</a></p>
+            <p>Thank you!</p>
+        </body>
+        </html>
+        """
+
+        try:
+            response = ses.send_email(
+                Source=SOURCE_EMAIL,
+                Destination={'ToAddresses': [email]},
+                Message={
+                    'Subject': {'Data': subject, 'Charset': 'UTF-8'},
+                    'Body': {
+                        'Html': {'Data': html_body, 'Charset': 'UTF-8'},
+                        'Text': {'Data': f"Visit this link to download: {track_url}", 'Charset': 'UTF-8'}
+                    }
+                }
+            )
+            successful.append(email)
+            logger.info(f"Email sent to {email}. SES Message ID: {response['MessageId']}")
+        except Exception as e:
+            failed.append({'email': email, 'error': str(e)})
+            logger.error(f"Failed to send email to {email}: {e}")
+
+    return {
+        'statusCode': 200,
+        'body': json.dumps({
+            'sent': successful,
+            'failed': failed
+        })
+    }
