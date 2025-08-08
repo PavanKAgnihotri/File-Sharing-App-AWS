@@ -13,7 +13,7 @@ s3 = boto3.client(
     aws_secret_access_key='IAM-secret-access-key',
     region_name='us-east-2'  
 )
-S3_BUCKET = 'pka-file-sharing'
+S3_BUCKET = 'bucket-name'
 
 db = pymysql.connect(
     host='RDS-Endpoint',
