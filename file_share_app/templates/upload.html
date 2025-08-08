@@ -1,0 +1,63 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Upload File</title>
+    <link rel="stylesheet" type="text/css" href="{{ url_for('static', filename='style.css') }}">
+    <p style="text-align: center;">
+    Logged in as {{ session['username'] }} |
+    <a href="{{ url_for('logout') }}">Logout</a>
+    </p>
+    <script>
+        function updateEmailFields() {
+            const count = parseInt(document.getElementById("emailCount").value);
+            const container = document.getElementById("emailFields");
+            container.innerHTML = ""; // Clear previous fields
+
+            for (let i = 1; i <= count; i++) {
+                const label = document.createElement("label");
+                label.textContent = `Email ${i}: `;
+                const input = document.createElement("input");
+                input.type = "email";
+                input.name = `email${i}`;
+                input.placeholder = `Email ${i}`;
+                input.required = true;
+
+                container.appendChild(label);
+                container.appendChild(input);
+                container.appendChild(document.createElement("br"));
+            }
+        }
+    </script>
+</head>
+<body>
+    <h2>Upload File and Enter Emails</h2>
+    {% with messages = get_flashed_messages() %}
+        {% if messages %}
+            <ul style="color: green;">
+                {% for message in messages %}
+                    <li>{{ message }}</li>
+                {% endfor %}
+            </ul>
+        {% endif %}
+    {% endwith %}
+    
+    <form method="post" enctype="multipart/form-data">
+        <label>Select a file:</label><br>
+        <input type="file" name="files" multiple required><br><br>
+
+        <label>How many email addresses? (1–5):</label>
+        <select id="emailCount" onchange="updateEmailFields()" required>
+            <option value="">--Select--</option>
+            {% for i in range(1, 6) %}
+                <option value="{{i}}">{{i}}</option>
+            {% endfor %}
+        </select><br><br>
+
+        <div id="emailFields"></div>
+
+        <br>
+        <button type="submit">Upload</button>
+    </form>
+</body>
+</html>

@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8" />
+    <title>Download Files</title>
+</head>
+<body>
+    <h2>Your files are ready to download:</h2>
+    <ul>
+        {% for file in download_links %}
+          <li>
+            <a href="{{ file.url }}">{{ file.name }}</a>
+          </li>
+        {% endfor %}
+    </ul>
+    <p>Thank you for using our service!</p>
+    {% if error %}
+      <div class="alert alert-warning">
+        {{ error }}
+      </div>
+    {% endif %}
+</body>
+</html>
